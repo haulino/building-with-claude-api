@@ -16,6 +16,15 @@ A comprehensive course covering the full spectrum of working with Anthropic mode
 - Model Context Protocol (MCP) server development
 - Computer Use automation
 
+## Setup
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Add `ANTHROPIC_API_KEY` to `.env`.
+
 ## Project Structure
 
 ```
