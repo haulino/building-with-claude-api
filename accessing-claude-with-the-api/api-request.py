@@ -1,12 +1,11 @@
+from anthropic import Anthropic
 from dotenv import load_dotenv
 load_dotenv()
-
-from anthropic import Anthropic
 
 client = Anthropic()
 model = "claude-sonnet-4-0"
 
-client.messages.create (
+response = client.messages.create(
     model=model,
     max_tokens=1000,
     messages=[
@@ -16,3 +15,5 @@ client.messages.create (
         }
     ]
 )
+
+print(response.content[0].text)
