@@ -25,6 +25,18 @@ pip install -r requirements.txt
 
 Add `ANTHROPIC_API_KEY` to `.env`.
 
+## Linting
+
+Activate venv first and install requirements
+
+```bash
+make lint   # check for issues
+make fmt    # format code
+make fix    # auto-fix safe issues
+```
+
+A git pre-commit hook runs `make lint` automatically before each commit.
+
 ## Project Structure
 
 ```
