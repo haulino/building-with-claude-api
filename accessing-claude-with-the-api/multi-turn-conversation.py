@@ -24,7 +24,7 @@ def chat(messages):
         max_tokens=1000,
         messages=messages,
     )
-    return message.context[0].text
+    return message.content[0].text
 
 
 # conversation
