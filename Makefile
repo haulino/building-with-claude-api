@@ -1,8 +1,5 @@
-lint:
-	ruff check .
-
 fmt:
-	ruff format .
+	source .venv/bin/activate && ruff format .
 
-fix:
-	ruff check --fix .
+lint:
+	source .venv/bin/activate && ruff check .
