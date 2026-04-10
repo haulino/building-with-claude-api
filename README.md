@@ -25,6 +25,12 @@ pip install -r requirements.txt
 
 Add `ANTHROPIC_API_KEY` to `.env`.
 
+## Linting
+```bash
+make fmt
+make lint
+```
+
 ## Project Structure
 
 ```
