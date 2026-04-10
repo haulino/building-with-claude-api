@@ -37,6 +37,8 @@ add_user_message(messages, "Define quantum computing in one sentence")
 # Get Claude's response
 answer = chat(messages)
 
+print(answer)
+
 # Add Claude's response to the conversation history
 add_assistant_message(messages, answer)
 
@@ -45,3 +47,5 @@ add_user_message(messages, "Write another sentence")
 
 # Get the follow-up response with full context
 final_answer = chat(messages)
+
+print(final_answer)
