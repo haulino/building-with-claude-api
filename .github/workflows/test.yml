@@ -1,0 +1,14 @@
+name: test
+
+on:
+  pull_request:
+
+unit-testing:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install pytest
+        run: pip install pytest==9.0.3
+      
+      - name: Unit testing
+        run: pytest
