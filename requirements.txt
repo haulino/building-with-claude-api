@@ -1,4 +1,4 @@
-anthropic
-python-dotenv
-ruff
-pytest
+anthropic==0.91.0
+python-dotenv==1.2.2
+ruff==0.15.9
+pytest==9.0.3
