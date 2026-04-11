@@ -26,8 +26,10 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Install pytest
         run: pip install pytest==9.0.3
 
       - name: Unit testing
-        run: pytest
+        run: pytest tests/
