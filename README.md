@@ -55,5 +55,20 @@ building-with-claude-api/
 4. Response to your server (message + usage + stop_reason)
 5. Response to client
 
+## Releases
+
+Releases are automated with [release-please](https://github.com/googleapis/release-please). Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+```
+<type>[(<scope>)][!]: <description>
+
+Examples:
+  feat: add streaming support
+  fix(auth): handle token expiry
+  feat!: redesign API  ← triggers a major version bump
+```
+
+Merging a PR to `main` updates the release PR. Merging the release PR publishes the CHANGELOG, bumps the version in `pyproject.toml`, and creates a GitHub Release.
+
 ## License
 MIT
