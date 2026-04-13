@@ -21,7 +21,7 @@ def add_assistant_message(messages, text):
 def chat(messages):
     message = client.messages.create(
         model=model,
-        max_tokens=1000,
+        max_tokens=500,
         messages=messages,
     )
     return message.content[0].text
@@ -31,21 +31,18 @@ def chat(messages):
 # Start with an empty message list
 messages = []
 
-# Add the initial user question
-add_user_message(messages, "Define quantum computing in one sentence")
+while True:
+    user_input = input("> ")
+    if user_input.lower() in ("exit", "quit"):
+        break
 
-# Get Claude's response
-answer = chat(messages)
+    # Add user input to list of messages
+    add_user_message(messages, user_input)
 
-print(answer)
+    # Get Claude's response
+    answer = chat(messages)
 
-# Add Claude's response to the conversation history
-add_assistant_message(messages, answer)
+    print(answer)
 
-# Add a follow-up question
-add_user_message(messages, "Write another sentence")
-
-# Get the follow-up response with full context
-final_answer = chat(messages)
-
-print(final_answer)
+    # Add Claude's response to the conversation history
+    add_assistant_message(messages, answer)
