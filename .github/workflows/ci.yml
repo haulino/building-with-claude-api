@@ -4,6 +4,24 @@ on:
   pull_request:
 
 jobs:
+  validate-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "$PR_TITLE" | \
+          grep -qE "^(feat|fix|chore|docs|test|refactor|style|perf|ci|build|revert)(\(.+\))?!?: .+" || \
+          (echo "PR title must follow conventional commits format." && \
+           echo "  Format: <type>[(<scope>)][!]: <description>" && \
+           echo "  Types:  feat|fix|chore|docs|test|refactor|style|perf|ci|build|revert" && \
+           echo "  Examples:" && \
+           echo "    feat: add streaming support" && \
+           echo "    fix(auth): handle token expiry" && \
+           echo "    feat!: redesign API (breaking change)" && \
+           exit 1)
+
   lint:
     runs-on: ubuntu-latest
     steps:
