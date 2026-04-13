@@ -12,7 +12,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           echo "$PR_TITLE" | \
-          grep -qE "^(feat|fix|chore|docs|test|refactor|style|perf|ci|build|revert)(\(.+\))?: .+" || \
+          grep -qE "^(feat|fix|chore|docs|test|refactor|style|perf|ci|build|revert)(\(.+\))?!?: .+" || \
           (echo "PR title must follow conventional commits format" && exit 1)
 
   lint:
