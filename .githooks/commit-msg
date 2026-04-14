@@ -1,0 +1,8 @@
+#!/bin/sh
+pattern="^(feat|fix|chore|docs|test|refactor|style|perf|ci|build|revert)(\(.+\))?!?: .+"
+if ! head -1 "$1" | grep -qE "$pattern"; then
+  echo "ERROR: Commit message must follow conventional commits format."
+  echo "  Example: feat: add streaming support"
+  echo "  Types: feat|fix|chore|docs|test|refactor|style|perf|ci|build|revert"
+  exit 1
+fi
