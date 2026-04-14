@@ -1,6 +1,6 @@
 [project]
 name = "building-with-claude-api"
-version = "0.5.0"
+version = "0.5.1"
 
 [tool.ruff]
 exclude = [".venv"]

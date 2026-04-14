@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1](https://github.com/haulino/building-with-claude-api/compare/v0.5.0...v0.5.1) (2026-04-14)
+
+
+### Bug Fixes
+
+* git hooks path ([#9](https://github.com/haulino/building-with-claude-api/issues/9)) ([054d93c](https://github.com/haulino/building-with-claude-api/commit/054d93cb84116ccad6fbe5045638e43b26fda0e6))
+
 ## [Unreleased]
 
 ## [0.5.0] - 2026-04-11
