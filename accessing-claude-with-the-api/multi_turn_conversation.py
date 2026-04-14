@@ -11,6 +11,7 @@ model = "claude-sonnet-4-0"
 def add_user_message(messages, text):
     user_message = {"role": "user", "content": text}
     messages.append(user_message)
+    return user_message
 
 
 def add_assistant_message(messages, text):
@@ -27,22 +28,23 @@ def chat(messages):
     return message.content[0].text
 
 
-# conversation
-# Start with an empty message list
-messages = []
+if __name__ == "__main__":
+    # conversation
+    # Start with an empty message list
+    messages = []
 
-while True:
-    user_input = input("> ")
-    if user_input.lower() in ("exit", "quit"):
-        break
+    while True:
+        user_input = input("> ")
+        if user_input.lower() in ("exit", "quit"):
+            break
 
-    # Add user input to list of messages
-    add_user_message(messages, user_input)
+        # Add user input to list of messages
+        add_user_message(messages, user_input)
 
-    # Get Claude's response
-    answer = chat(messages)
+        # Get Claude's response
+        answer = chat(messages)
 
-    print(answer)
+        print(answer)
 
-    # Add Claude's response to the conversation history
-    add_assistant_message(messages, answer)
+        # Add Claude's response to the conversation history
+        add_assistant_message(messages, answer)
