@@ -31,6 +31,21 @@ make fmt
 make lint
 ```
 
+## Git Hooks
+
+Commit hooks live in `.githooks/` and are activated via `core.hookspath`:
+
+```bash
+git config core.hookspath .githooks
+```
+
+| Hook | Enforces |
+|------|----------|
+| `commit-msg` | Conventional Commits format on every commit message |
+| `pre-commit` | Linting (`make lint`) before each commit |
+
+New clones must run the config command above to activate the hooks — they are not enabled automatically.
+
 ## Project Structure
 
 ```
