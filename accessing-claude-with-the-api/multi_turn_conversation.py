@@ -17,6 +17,7 @@ def add_user_message(messages, text):
 def add_assistant_message(messages, text):
     assistant_message = {"role": "assistant", "content": text}
     messages.append(assistant_message)
+    return assistant_message
 
 
 def chat(messages):
