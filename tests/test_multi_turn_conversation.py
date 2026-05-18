@@ -1,4 +1,9 @@
-from multi_turn_conversation import add_user_message, add_assistant_message
+from unittest.mock import MagicMock, patch
+
+from multi_turn_conversation import add_user_message, add_assistant_message, chat
+
+# Add any global vars here
+SYSTEM_PROMPT = "You are a helpful assistant."
 
 
 def test_add_user_message():
@@ -15,3 +20,30 @@ def test_add_assistant_message():
     result = add_assistant_message(messages, input)
 
     assert result in messages
+
+
+def test_chat_includes_system_prompt():
+    mock_response = MagicMock()
+    mock_response.content[0].text = "Hello! Claude here"
+
+    with patch(
+        "multi_turn_conversation.client.messages.create", return_value=mock_response
+    ) as mock_create:
+        messages = [{"role": "user", "content": "hi"}]
+        chat(messages, system_prompt=SYSTEM_PROMPT)
+
+        _, kwargs = mock_create.call_args
+        assert kwargs.get("system") == SYSTEM_PROMPT
+
+
+def test_chat_without_system_prompt():
+    mock_response = MagicMock()
+    mock_response.content[0].text = "Hello! Claude here"
+
+    with patch(
+        "multi_turn_conversation.client.messages.create", return_value=mock_response
+    ) as mock_create:
+        messages = [{"role": "user", "content": "hi"}]
+        chat(messages)
+        _, kwargs = mock_create.call_args
+        assert "system" not in kwargs
