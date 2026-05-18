@@ -27,8 +27,8 @@ Add `ANTHROPIC_API_KEY` to `.env`.
 
 ## Linting
 ```bash
-make fmt
 make lint
+make fmt
 ```
 
 ## Git Hooks
