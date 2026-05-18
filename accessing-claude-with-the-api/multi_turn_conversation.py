@@ -55,7 +55,7 @@ if __name__ == "__main__":
         add_user_message(messages, user_input)
 
         # Get Claude's response
-        answer = chat(messages)
+        answer = chat(messages, system_prompt)
 
         print(answer)
 
