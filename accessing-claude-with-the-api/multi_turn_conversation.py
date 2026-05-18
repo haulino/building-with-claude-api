@@ -20,12 +20,18 @@ def add_assistant_message(messages, text):
     return assistant_message
 
 
-def chat(messages):
-    message = client.messages.create(
-        model=model,
-        max_tokens=500,
-        messages=messages,
-    )
+def chat(messages, system_prompt=None):
+    params = {
+        "model": model,
+        "max_tokens": 500,
+        "messages": messages,
+    }
+
+    if system_prompt:
+        params["system"] = system_prompt
+
+    message = client.messages.create(**params)
+
     return message.content[0].text
 
 
@@ -33,6 +39,12 @@ if __name__ == "__main__":
     # conversation
     # Start with an empty message list
     messages = []
+
+    system_prompt = """
+    You are a patient math tutor.
+    Do not directly answer a student's questions.
+    Guide them to a solution step by step.
+    """
 
     while True:
         user_input = input("> ")
