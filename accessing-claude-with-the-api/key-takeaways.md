@@ -46,3 +46,7 @@ When generation completes, the API sends back a structured response containing:
 
 ### 5. Response to client
 Your server receives this response and forwards the generated text back to your client application, where it appears in the user interface.
+
+## Temperature
+
+The `temperature` parameter (0.0–1.0) controls randomness in token selection during generation. Lower values make output more deterministic and focused; higher values increase variety and creativity. Default is 1.0. Use lower temperatures for factual/analytical tasks and higher temperatures for creative/brainstorming tasks.
