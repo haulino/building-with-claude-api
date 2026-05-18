@@ -47,3 +47,31 @@ def test_chat_without_system_prompt():
         chat(messages)
         _, kwargs = mock_create.call_args
         assert "system" not in kwargs
+
+
+def test_chat_includes_temperature():
+    mock_response = MagicMock()
+    mock_response.content[0].text = "Hello! Claude here"
+
+    with patch(
+        "multi_turn_conversation.client.messages.create", return_value=mock_response
+    ) as mock_create:
+        messages = [{"role": "user", "content": "hi"}]
+        chat(messages, temperature=0.7)
+
+        _, kwargs = mock_create.call_args
+        assert kwargs.get("temperature") == 0.7
+
+
+def test_chat_without_temperature():
+    mock_response = MagicMock()
+    mock_response.content[0].text = "Hello! Claude here"
+
+    with patch(
+        "multi_turn_conversation.client.messages.create", return_value=mock_response
+    ) as mock_create:
+        messages = [{"role": "user", "content": "hi"}]
+        chat(messages)
+
+        _, kwargs = mock_create.call_args
+        assert "temperature" not in kwargs
