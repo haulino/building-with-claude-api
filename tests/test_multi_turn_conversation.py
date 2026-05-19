@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from multi_turn_conversation import add_user_message, add_assistant_message, chat
+from multi_turn_conversation import add_user_message, add_assistant_message, chat, chat_stream
 
 # Add any global vars here
 SYSTEM_PROMPT = "You are a helpful assistant."
@@ -75,3 +75,18 @@ def test_chat_without_temperature():
 
         _, kwargs = mock_create.call_args
         assert "temperature" not in kwargs
+
+
+def test_chat_stream_returns_accumulated_text():
+    mock_stream = MagicMock()
+    mock_stream.__enter__ = MagicMock(return_value=mock_stream)
+    mock_stream.__exit__ = MagicMock(return_value=False)
+    mock_stream.text_stream = iter(["Hello", ", ", "world!"])
+
+    with patch(
+        "multi_turn_conversation.client.messages.stream", return_value=mock_stream
+    ):
+        messages = [{"role": "user", "content": "hi"}]
+        result = chat_stream(messages)
+
+        assert result == "Hello, world!"
