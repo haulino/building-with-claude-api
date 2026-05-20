@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0](https://github.com/haulino/building-with-claude-api/compare/v0.7.0...v0.8.0) (2026-05-20)
+
+
+### Features
+
+* add response streaming support ([#16](https://github.com/haulino/building-with-claude-api/issues/16)) ([f73a06c](https://github.com/haulino/building-with-claude-api/commit/f73a06cbd8799e336bc05309a741179aaaa3d5fa))
+
 ## [0.7.0](https://github.com/haulino/building-with-claude-api/compare/v0.6.0...v0.7.0) (2026-05-18)
 
 
