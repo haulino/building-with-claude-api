@@ -52,13 +52,13 @@ def chat_stream(messages, system_prompt=None, temperature=None):
         params["temperature"] = temperature
 
     with client.messages.stream(**params) as stream:
-        full_text = ""
+        text_chunks = []
         for text in stream.text_stream:
             print(text, end="", flush=True)
-            full_text += text
+            text_chunks.append(text)
     print()
 
-    return full_text
+    return "".join(text_chunks)
 
 
 if __name__ == "__main__":
