@@ -1,6 +1,11 @@
 from unittest.mock import MagicMock, patch
 
-from multi_turn_conversation import add_user_message, add_assistant_message, chat, chat_stream
+from multi_turn_conversation import (
+    add_user_message,
+    add_assistant_message,
+    chat,
+    chat_stream,
+)
 
 # Add any global vars here
 SYSTEM_PROMPT = "You are a helpful assistant."

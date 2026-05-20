@@ -31,7 +31,13 @@ All scripts use `python-dotenv` to load `ANTHROPIC_API_KEY` from `.env`.
 
 ## Conventions
 
+- **Pre-commit:** Hook runs `ruff check` then `ruff format` automatically — long lines get fixed on commit.
 - **Commits:** Conventional Commits format enforced by `.githooks/commit-msg` and CI. Types: feat, fix, chore, docs, test, refactor, style, perf, ci, build, revert.
 - **Linting:** Ruff with E/F/W rules, 88-char line length. Run `make lint` and `make fmt` before every commit (the pre-commit hook enforces this).
 - **Releases:** Automated via release-please. Version tracked in `pyproject.toml`.
 - **Model:** Scripts use `claude-sonnet-4-0` as the default model.
+
+## Testing Patterns
+
+- Mock `client.messages.stream()` with a MagicMock that has `__enter__`/`__exit__` and `text_stream = iter([...])`.
+- Keep imports under 88 chars — use multi-line style when importing 3+ names from a module.
