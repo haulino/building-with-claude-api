@@ -38,8 +38,33 @@ def chat(messages, system_prompt=None, temperature=None):
     return message.content[0].text
 
 
+def chat_stream(messages, system_prompt=None, temperature=None):
+    params = {
+        "model": model,
+        "max_tokens": 500,
+        "messages": messages,
+    }
+
+    if system_prompt:
+        params["system"] = system_prompt
+
+    if temperature is not None:
+        params["temperature"] = temperature
+
+    with client.messages.stream(**params) as stream:
+        text_chunks = []
+        for text in stream.text_stream:
+            print(text, end="", flush=True)
+            text_chunks.append(text)
+    print()
+
+    return "".join(text_chunks)
+
+
 if __name__ == "__main__":
     # conversation
+    use_streaming = True
+
     # Start with an empty message list
     messages = []
 
@@ -58,9 +83,11 @@ if __name__ == "__main__":
         add_user_message(messages, user_input)
 
         # Get Claude's response
-        answer = chat(messages, system_prompt)
-
-        print(answer)
+        if use_streaming:
+            answer = chat_stream(messages, system_prompt)
+        else:
+            answer = chat(messages, system_prompt)
+            print(answer)
 
         # Add Claude's response to the conversation history
         add_assistant_message(messages, answer)
