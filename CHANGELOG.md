@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0](https://github.com/haulino/building-with-claude-api/compare/v0.8.0...v0.9.0) (2026-05-20)
+
+
+### Features
+
+* add structured output extraction with prefilling and stop sequences ([#18](https://github.com/haulino/building-with-claude-api/issues/18)) ([c50400d](https://github.com/haulino/building-with-claude-api/commit/c50400dc786b04be6261f3dc423fda40317ce248))
+
 ## [0.8.0](https://github.com/haulino/building-with-claude-api/compare/v0.7.0...v0.8.0) (2026-05-20)
 
 
