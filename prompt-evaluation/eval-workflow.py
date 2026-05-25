@@ -2,6 +2,7 @@ from anthropic import Anthropic
 from dotenv import load_dotenv
 import json
 import os
+import uuid
 
 load_dotenv()
 
@@ -61,9 +62,54 @@ Generate 3 objects.
     return json.loads(text)
 
 
+def run_prompt(test_case):
+    """Merges the prompt and test case input, then returns the result"""
+    prompt = f"""
+Please solve the following task:
+
+{test_case["task"]}
+"""
+    messages = []
+    add_user_message(messages, prompt)
+    output = chat(messages)
+    return output
+
+
+def run_test_case(test_case):
+    """Calls run_prompt, then grades the result"""
+    output = run_prompt(test_case)
+
+    # TODO - grading
+    score = 10
+    return {"output": output, "test_case": test_case, "score": score}
+
+
+def run_eval(dataset):
+    """Loads the dataset and calls run_test_case with each case"""
+    results = []
+
+    for test_case in dataset:
+        result = run_test_case(test_case)
+        results.append(result)
+
+    return results
+
+
 if __name__ == "__main__":
+    run_id = uuid.uuid4().hex[:8]
     dataset = generate_dataset()
-    print(dataset)
-    output_path = os.path.join(os.path.dirname(__file__), "dataset.json")
-    with open(output_path, "w") as f:
+
+    dataset_output_path = os.path.join(
+        os.path.dirname(__file__), f"dataset_{run_id}.json"
+    )
+    with open(dataset_output_path, "w") as f:
         json.dump(dataset, f, indent=2)
+
+    results = run_eval(dataset)
+
+    eval_output_path = os.path.join(
+        os.path.dirname(__file__), f"eval_output_{run_id}.json"
+    )
+    with open(eval_output_path, "w") as f:
+        json.dump(results, f, indent=2)
+
