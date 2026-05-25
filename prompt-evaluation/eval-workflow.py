@@ -1,8 +1,10 @@
 from anthropic import Anthropic
 from dotenv import load_dotenv
 from statistics import mean
+import ast
 import json
 import os
+import re
 import uuid
 
 load_dotenv()
@@ -38,13 +40,18 @@ def generate_dataset():
 Generate an evaluation dataset for a prompt evaluation. The dataset will be
 used to evaluate prompts that generate Python, JSON, or Regex specifically
 for AWS-related tasks. Generate an array of JSON objects, each representing
-task that requires Python, JSON, or a Regex to complete.
+a task that requires Python, JSON, or a Regex to complete.
+
+Each object must include:
+- "task": Description of the task
+- "type": One of "python", "json", or "regex"
 
 Example output:
 ```json
 [
   {
     "task": "Description of task",
+    "type": "python"
   },
   ...additional
 ]
@@ -52,7 +59,8 @@ Example output:
 
 * Focus on tasks that can be solved by writing a single Python function,
 a single JSON object, or a single regex
-* Focus on tasks solvable with mininum coding.
+* Focus on tasks solvable with minimum coding.
+* Include at least one task of each type.
 
 Generate 3 objects.
 """
@@ -69,10 +77,15 @@ def run_prompt(test_case):
 Please solve the following task:
 
 {test_case["task"]}
+
+* Respond only with Python, JSON, or a plain Regex
+* Do not add any comments or commentary or explanation
+
 """
     messages = []
     add_user_message(messages, prompt)
-    output = chat(messages)
+    add_assistant_message(messages, "```code")
+    output = chat(messages, stop_sequences=["```"])
     return output
 
 
@@ -81,14 +94,16 @@ def run_test_case(test_case):
     output = run_prompt(test_case)
 
     model_grade = grade_by_model(test_case, output)
-    score = model_grade["score"]
-    reasoning = model_grade["reasoning"]
+    syntax_score = grade_syntax(output, test_case)
+    score = mean([model_grade["score"], syntax_score])
 
     return {
         "output": output,
         "test_case": test_case,
         "score": score,
-        "reasoning": reasoning,
+        "syntax_score": syntax_score,
+        "model_score": model_grade["score"],
+        "model_reasoning": model_grade["reasoning"],
     }
 
 
@@ -126,6 +141,43 @@ Provide your evaluation as a structured JSON object with:
 
     eval_text = chat(messages, stop_sequences=["```"])
     return json.loads(eval_text)
+
+
+def validate_json(text):
+    try:
+        json.loads(text.strip())
+        return 10
+    except json.JSONDecodeError:
+        return 0
+
+
+def validate_python(text):
+    try:
+        ast.parse(text.strip())
+        return 10
+    except SyntaxError:
+        return 0
+
+
+def validate_regex(text):
+    try:
+        re.compile(text.strip())
+        return 10
+    except re.error:
+        return 0
+
+
+def grade_syntax(output, test_case):
+    task_type = test_case.get("type", "")
+    validators = {
+        "json": validate_json,
+        "python": validate_python,
+        "regex": validate_regex,
+    }
+    validator = validators.get(task_type)
+    if validator is None:
+        return 5
+    return validator(output)
 
 
 if __name__ == "__main__":
