@@ -1,0 +1,199 @@
+from anthropic import Anthropic
+from dotenv import load_dotenv
+from statistics import mean
+import ast
+import json
+import os
+import re
+import uuid
+
+load_dotenv()
+
+client = Anthropic()
+model = "claude-sonnet-4-0"
+
+
+def add_user_message(messages, text):
+    messages.append({"role": "user", "content": text})
+
+
+def add_assistant_message(messages, text):
+    messages.append({"role": "assistant", "content": text})
+
+
+def chat(messages, stop_sequences=None):
+    params = {
+        "model": model,
+        "max_tokens": 500,
+        "messages": messages,
+    }
+
+    if stop_sequences is not None:
+        params["stop_sequences"] = stop_sequences
+
+    response = client.messages.create(**params)
+    return response.content[0].text
+
+
+def generate_dataset():
+    prompt = """
+Generate an evaluation dataset for a prompt evaluation. The dataset will be
+used to evaluate prompts that generate Python, JSON, or Regex specifically
+for AWS-related tasks. Generate an array of JSON objects, each representing
+a task that requires Python, JSON, or a Regex to complete.
+
+Each object must include:
+- "task": Description of the task
+- "type": One of "python", "json", or "regex"
+
+Example output:
+```json
+[
+  {
+    "task": "Description of task",
+    "type": "python"
+  },
+  ...additional
+]
+```
+
+* Focus on tasks that can be solved by writing a single Python function,
+a single JSON object, or a single regex
+* Focus on tasks solvable with minimum coding.
+* Include at least one task of each type.
+
+Generate 3 objects.
+"""
+    messages = []
+    add_user_message(messages, prompt)
+    add_assistant_message(messages, "```json")
+    text = chat(messages, stop_sequences=["```"])
+    return json.loads(text)
+
+
+def run_prompt(test_case):
+    """Merges the prompt and test case input, then returns the result"""
+    prompt = f"""
+Please solve the following task:
+
+{test_case["task"]}
+
+* Respond only with Python, JSON, or a plain Regex
+* Do not add any comments or commentary or explanation
+
+"""
+    messages = []
+    add_user_message(messages, prompt)
+    add_assistant_message(messages, "```code")
+    output = chat(messages, stop_sequences=["```"])
+    return output
+
+
+def run_test_case(test_case):
+    """Calls run_prompt, then grades the result"""
+    output = run_prompt(test_case)
+
+    model_grade = grade_by_model(test_case, output)
+    syntax_score = grade_syntax(output, test_case)
+    score = mean([model_grade["score"], syntax_score])
+
+    return {
+        "output": output,
+        "test_case": test_case,
+        "score": score,
+        "syntax_score": syntax_score,
+        "model_score": model_grade["score"],
+        "model_reasoning": model_grade["reasoning"],
+    }
+
+
+def run_eval(dataset):
+    """Loads the dataset and calls run_test_case with each case"""
+    results = []
+
+    for test_case in dataset:
+        result = run_test_case(test_case)
+        results.append(result)
+
+    average_score = mean([result["score"] for result in results])
+    print(f"Average score: {average_score}")
+
+    return results
+
+
+def grade_by_model(test_case, output):
+    eval_prompt = f"""You are an expert code reviewer. \
+Evaluate this AI-generated solution.
+
+Task: {test_case["task"]}
+Solution: {output}
+
+Provide your evaluation as a structured JSON object with:
+- "strengths": An array of 1-3 key strengths
+- "weaknesses": An array of 1-3 key areas for improvement
+- "reasoning": A concise explanation of your assessment
+- "score": A number between 1-10
+"""
+
+    messages = []
+    add_user_message(messages, eval_prompt)
+    add_assistant_message(messages, "```json")
+
+    eval_text = chat(messages, stop_sequences=["```"])
+    return json.loads(eval_text)
+
+
+def validate_json(text):
+    try:
+        json.loads(text.strip())
+        return 10
+    except json.JSONDecodeError:
+        return 0
+
+
+def validate_python(text):
+    try:
+        ast.parse(text.strip())
+        return 10
+    except SyntaxError:
+        return 0
+
+
+def validate_regex(text):
+    try:
+        re.compile(text.strip())
+        return 10
+    except re.error:
+        return 0
+
+
+def grade_syntax(output, test_case):
+    task_type = test_case.get("type", "")
+    validators = {
+        "json": validate_json,
+        "python": validate_python,
+        "regex": validate_regex,
+    }
+    validator = validators.get(task_type)
+    if validator is None:
+        return 5
+    return validator(output)
+
+
+if __name__ == "__main__":
+    run_id = uuid.uuid4().hex[:8]
+    dataset = generate_dataset()
+
+    dataset_output_path = os.path.join(
+        os.path.dirname(__file__), f"dataset_{run_id}.json"
+    )
+    with open(dataset_output_path, "w") as f:
+        json.dump(dataset, f, indent=2)
+
+    results = run_eval(dataset)
+
+    eval_output_path = os.path.join(
+        os.path.dirname(__file__), f"eval_output_{run_id}.json"
+    )
+    with open(eval_output_path, "w") as f:
+        json.dump(results, f, indent=2)
