@@ -229,16 +229,20 @@ class PromptEvaluator:
         self.max_concurrent_tasks = max_concurrent_tasks
 
     def render(self, template_string, variables):
-        placeholders = re.findall(r"{([^{}]+)}", template_string)
+        sentinel = "\x00"
+        escaped = template_string.replace("{{", sentinel + "L").replace(
+            "}}", sentinel + "R"
+        )
 
-        result = template_string
+        placeholders = re.findall(r"{([^{}]+)}", escaped)
         for placeholder in placeholders:
             if placeholder in variables:
-                result = result.replace(
-                    "{" + placeholder + "}", str(variables[placeholder])
+                escaped = escaped.replace(
+                    "{" + placeholder + "}",
+                    str(variables[placeholder]),
                 )
 
-        return result.replace("{{", "{").replace("}}", "}")
+        return escaped.replace(sentinel + "L", "{").replace(sentinel + "R", "}")
 
     def generate_unique_ideas(self, task_description, prompt_inputs_spec, num_cases):
         prompt = """\
