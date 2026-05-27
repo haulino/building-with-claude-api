@@ -422,19 +422,19 @@ class PromptEvaluator:
             }
 
             for future in concurrent.futures.as_completed(future_to_idea):
+                completed += 1
                 try:
                     result = future.result()
-                    completed += 1
-                    current_percentage = int((completed / total) * 100)
-                    milestone = (current_percentage // 20) * 20
-
-                    if milestone > last_reported_percentage:
-                        print(f"Generated {completed}/{total} test cases")
-                        last_reported_percentage = milestone
-
                     dataset.append(result)
                 except Exception as e:
                     print(f"Error generating test case: {e}")
+
+                current_percentage = int((completed / total) * 100)
+                milestone = (current_percentage // 20) * 20
+
+                if milestone > last_reported_percentage:
+                    print(f"Generated {completed}/{total} test cases")
+                    last_reported_percentage = milestone
 
         with open(output_file, "w") as f:
             json.dump(dataset, f, indent=2)
