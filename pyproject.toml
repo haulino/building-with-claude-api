@@ -3,7 +3,7 @@ name = "building-with-claude-api"
 version = "0.10.0"
 
 [tool.ruff]
-exclude = [".venv"]
+exclude = [".venv", "prompt-evaluation/001_prompting.ipynb"]
 line-length = 88
 
 [tool.ruff.lint]

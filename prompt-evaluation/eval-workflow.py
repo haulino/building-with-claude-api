@@ -1,16 +1,17 @@
-from anthropic import Anthropic
-from dotenv import load_dotenv
-from statistics import mean
-import ast
 import json
 import os
 import re
 import uuid
+from statistics import mean
+from textwrap import dedent
+
+from anthropic import Anthropic
+from dotenv import load_dotenv
 
 load_dotenv()
 
 client = Anthropic()
-model = "claude-sonnet-4-0"
+model = "claude-haiku-4-5"
 
 
 def add_user_message(messages, text):
@@ -21,12 +22,16 @@ def add_assistant_message(messages, text):
     messages.append({"role": "assistant", "content": text})
 
 
-def chat(messages, stop_sequences=None):
+def chat(messages, system=None, temperature=1.0, stop_sequences=None):
     params = {
         "model": model,
-        "max_tokens": 500,
+        "max_tokens": 1000,
         "messages": messages,
+        "temperature": temperature,
     }
+
+    if system:
+        params["system"] = system
 
     if stop_sequences is not None:
         params["stop_sequences"] = stop_sequences
@@ -35,165 +40,299 @@ def chat(messages, stop_sequences=None):
     return response.content[0].text
 
 
-def generate_dataset():
-    prompt = """
-Generate an evaluation dataset for a prompt evaluation. The dataset will be
-used to evaluate prompts that generate Python, JSON, or Regex specifically
-for AWS-related tasks. Generate an array of JSON objects, each representing
-a task that requires Python, JSON, or a Regex to complete.
+class PromptEvaluator:
+    def __init__(self, max_concurrent_tasks=3):
+        self.max_concurrent_tasks = max_concurrent_tasks
 
-Each object must include:
-- "task": Description of the task
-- "type": One of "python", "json", or "regex"
+    def render(self, template_string, variables):
+        placeholders = re.findall(r"{([^{}]+)}", template_string)
 
-Example output:
-```json
-[
-  {
-    "task": "Description of task",
-    "type": "python"
-  },
-  ...additional
-]
-```
+        result = template_string
+        for placeholder in placeholders:
+            if placeholder in variables:
+                result = result.replace(
+                    "{" + placeholder + "}", str(variables[placeholder])
+                )
 
-* Focus on tasks that can be solved by writing a single Python function,
-a single JSON object, or a single regex
-* Focus on tasks solvable with minimum coding.
-* Include at least one task of each type.
+        return result.replace("{{", "{").replace("}}", "}")
 
-Generate 3 objects.
-"""
-    messages = []
-    add_user_message(messages, prompt)
-    add_assistant_message(messages, "```json")
-    text = chat(messages, stop_sequences=["```"])
-    return json.loads(text)
+    def generate_unique_ideas(self, task_description, prompt_inputs_spec, num_cases):
+        prompt = """\
+        Generate {num_cases} unique, diverse ideas for testing a prompt \
+        that accomplishes this task:
 
+        <task_description>
+        {task_description}
+        </task_description>
 
-def run_prompt(test_case):
-    """Merges the prompt and test case input, then returns the result"""
-    prompt = f"""
-Please solve the following task:
+        The prompt will receive the following inputs:
+        <prompt_inputs>
+        {prompt_inputs_spec}
+        </prompt_inputs>
 
-{test_case["task"]}
+        Each idea should represent a distinct scenario or example that \
+        tests different aspects of the task.
 
-* Respond only with Python, JSON, or a plain Regex
-* Do not add any comments or commentary or explanation
+        Output Format:
+        Provide your response as a structured JSON array where each \
+        item is a brief description of the idea.
 
-"""
-    messages = []
-    add_user_message(messages, prompt)
-    add_assistant_message(messages, "```code")
-    output = chat(messages, stop_sequences=["```"])
-    return output
+        Example:
+        ```json
+        [
+            "Testing with technical computer science terminology",
+            "Testing with medical research findings",
+            "Testing with complex mathematical concepts"
+        ]
+        ```
 
+        Ensure each idea is:
+        - Clearly distinct from the others
+        - Relevant to the task description
+        - Specific enough to guide generation of a full test case
+        - Quick to solve without requiring extensive computation
+        - Solvable with no more than 400 tokens of output
 
-def run_test_case(test_case):
-    """Calls run_prompt, then grades the result"""
-    output = run_prompt(test_case)
+        Remember, only generate {num_cases} unique ideas"""
 
-    model_grade = grade_by_model(test_case, output)
-    syntax_score = grade_syntax(output, test_case)
-    score = mean([model_grade["score"], syntax_score])
+        system_prompt = (
+            "You are a test scenario designer specialized in "
+            "creating diverse, unique testing scenarios."
+        )
 
-    return {
-        "output": output,
-        "test_case": test_case,
-        "score": score,
-        "syntax_score": syntax_score,
-        "model_score": model_grade["score"],
-        "model_reasoning": model_grade["reasoning"],
-    }
+        example_prompt_inputs = ""
+        for key, value in prompt_inputs_spec.items():
+            val = value.replace("\n", "\\n")
+            example_prompt_inputs += f'"{key}": str # {val},'
 
+        rendered_prompt = self.render(
+            dedent(prompt),
+            {
+                "task_description": task_description,
+                "num_cases": num_cases,
+                "prompt_inputs_spec": example_prompt_inputs,
+            },
+        )
 
-def run_eval(dataset):
-    """Loads the dataset and calls run_test_case with each case"""
-    results = []
+        messages = []
+        add_user_message(messages, rendered_prompt)
+        add_assistant_message(messages, "```json")
+        text = chat(
+            messages,
+            stop_sequences=["```"],
+            system=system_prompt,
+            temperature=1.0,
+        )
 
-    for test_case in dataset:
-        result = run_test_case(test_case)
-        results.append(result)
+        return json.loads(text)
 
-    average_score = mean([result["score"] for result in results])
-    print(f"Average score: {average_score}")
+    def generate_test_case(self, task_description, idea, prompt_inputs_spec=None):
+        if prompt_inputs_spec is None:
+            prompt_inputs_spec = {}
 
-    return results
+        example_prompt_inputs = ""
+        for key, value in prompt_inputs_spec.items():
+            val = value.replace("\n", "\\n")
+            example_prompt_inputs += f'"{key}": "EXAMPLE_VALUE", // {val}\n'
 
+        allowed_keys = ", ".join([f'"{key}"' for key in prompt_inputs_spec.keys()])
 
-def grade_by_model(test_case, output):
-    eval_prompt = f"""You are an expert code reviewer. \
-Evaluate this AI-generated solution.
+        prompt = """\
+        Generate a single detailed test case for a prompt evaluation \
+        based on:
 
-Task: {test_case["task"]}
-Solution: {output}
+        <task_description>
+        {task_description}
+        </task_description>
 
-Provide your evaluation as a structured JSON object with:
-- "strengths": An array of 1-3 key strengths
-- "weaknesses": An array of 1-3 key areas for improvement
-- "reasoning": A concise explanation of your assessment
-- "score": A number between 1-10
-"""
+        <specific_idea>
+        {idea}
+        </specific_idea>
 
-    messages = []
-    add_user_message(messages, eval_prompt)
-    add_assistant_message(messages, "```json")
+        <allowed_input_keys>
+        {allowed_keys}
+        </allowed_input_keys>
 
-    eval_text = chat(messages, stop_sequences=["```"])
-    return json.loads(eval_text)
+        Output Format:
+        ```json
+        {{{{
+            "prompt_inputs": {{{{
+            {example_prompt_inputs}
+            }}}},
+            "solution_criteria": ["criterion 1", "criterion 2", ...]
+        }}}}
+        ```
 
+        IMPORTANT REQUIREMENTS:
+        - You MUST ONLY use these exact input keys: {allowed_keys}
+        - Do NOT add any additional keys to prompt_inputs
+        - All keys listed in allowed_input_keys must be included
+        - Make the test case realistic and practically useful
+        - Include measurable, concise solution criteria (1-4 items)
+        - Keep solution criteria simple and directly tied to the task
+        - The test case should be tailored to the specific idea
+        - Quick to solve without extensive computation
+        - Solvable with no more than 400 tokens of output
+        - DO NOT include fields beyond those in the output format"""
 
-def validate_json(text):
-    try:
-        json.loads(text.strip())
-        return 10
-    except json.JSONDecodeError:
-        return 0
+        system_prompt = (
+            "You are a test case creator specializing in "
+            "designing evaluation scenarios."
+        )
 
+        rendered_prompt = self.render(
+            dedent(prompt),
+            {
+                "allowed_keys": allowed_keys,
+                "task_description": task_description,
+                "idea": idea,
+                "example_prompt_inputs": example_prompt_inputs,
+            },
+        )
 
-def validate_python(text):
-    try:
-        ast.parse(text.strip())
-        return 10
-    except SyntaxError:
-        return 0
+        messages = []
+        add_user_message(messages, rendered_prompt)
+        add_assistant_message(messages, "```json")
+        text = chat(
+            messages,
+            stop_sequences=["```"],
+            system=system_prompt,
+            temperature=0.7,
+        )
 
+        test_case = json.loads(text)
+        test_case["task_description"] = task_description
+        test_case["scenario"] = idea
 
-def validate_regex(text):
-    try:
-        re.compile(text.strip())
-        return 10
-    except re.error:
-        return 0
+        return test_case
 
+    def generate_dataset(
+        self,
+        task_description,
+        prompt_inputs_spec=None,
+        num_cases=1,
+        output_file="dataset.json",
+    ):
+        if prompt_inputs_spec is None:
+            prompt_inputs_spec = {}
 
-def grade_syntax(output, test_case):
-    task_type = test_case.get("type", "")
-    validators = {
-        "json": validate_json,
-        "python": validate_python,
-        "regex": validate_regex,
-    }
-    validator = validators.get(task_type)
-    if validator is None:
-        return 5
-    return validator(output)
+        ideas = self.generate_unique_ideas(
+            task_description, prompt_inputs_spec, num_cases
+        )
+
+        dataset = []
+        for idea in ideas:
+            result = self.generate_test_case(task_description, idea, prompt_inputs_spec)
+            dataset.append(result)
+
+        with open(output_file, "w") as f:
+            json.dump(dataset, f, indent=2)
+
+        return dataset
+
+    def grade_output(self, test_case, output, extra_criteria):
+        prompt_inputs = ""
+        for key, value in test_case["prompt_inputs"].items():
+            val = value.replace("\n", "\\n")
+            prompt_inputs += f'"{key}": "{val}",\n'
+
+        eval_template = """\
+        Evaluate the following AI-generated solution.
+
+        Task: {task_description}
+        Inputs: {prompt_inputs}
+        Solution: {output}
+
+        Criteria:
+        {solution_criteria}
+
+        Provide your evaluation as a structured JSON object with:
+        - "strengths": An array of 1-3 key strengths
+        - "weaknesses": An array of 1-3 key areas for improvement
+        - "reasoning": A concise explanation of your assessment
+        - "score": A number between 1-10"""
+
+        eval_prompt = self.render(
+            dedent(eval_template),
+            {
+                "task_description": test_case["task_description"],
+                "prompt_inputs": prompt_inputs,
+                "output": output,
+                "solution_criteria": "\n".join(test_case["solution_criteria"]),
+            },
+        )
+
+        messages = []
+        add_user_message(messages, eval_prompt)
+        add_assistant_message(messages, "```json")
+        eval_text = chat(
+            messages,
+            stop_sequences=["```"],
+            temperature=0.0,
+        )
+        return json.loads(eval_text)
+
+    def run_test_case(self, test_case, run_prompt_function, extra_criteria=None):
+        output = run_prompt_function(test_case["prompt_inputs"])
+        model_grade = self.grade_output(test_case, output, extra_criteria)
+
+        return {
+            "output": output,
+            "test_case": test_case,
+            "score": model_grade["score"],
+            "reasoning": model_grade["reasoning"],
+        }
+
+    def run_evaluation(
+        self,
+        run_prompt_function,
+        dataset_file,
+        extra_criteria=None,
+        json_output_file="output.json",
+        html_output_file="output.html",
+    ):
+        with open(dataset_file, "r") as f:
+            dataset = json.load(f)
+
+        results = []
+        for test_case in dataset:
+            result = self.run_test_case(test_case, run_prompt_function, extra_criteria)
+            results.append(result)
+
+        average_score = mean([result["score"] for result in results])
+        print(f"Average score: {average_score}")
+
+        with open(json_output_file, "w") as f:
+            json.dump(results, f, indent=2)
+
+        return results
 
 
 if __name__ == "__main__":
     run_id = uuid.uuid4().hex[:8]
-    dataset = generate_dataset()
+    evaluator = PromptEvaluator(max_concurrent_tasks=1)
 
-    dataset_output_path = os.path.join(
-        os.path.dirname(__file__), f"dataset_{run_id}.json"
+    dataset = evaluator.generate_dataset(
+        task_description="Generate a solution for a given coding task",
+        prompt_inputs_spec={"task": "Description of the coding task"},
+        output_file=os.path.join(os.path.dirname(__file__), f"dataset_{run_id}.json"),
+        num_cases=3,
     )
-    with open(dataset_output_path, "w") as f:
-        json.dump(dataset, f, indent=2)
 
-    results = run_eval(dataset)
+    def run_prompt(prompt_inputs):
+        prompt = "Solve this task:\n"
+        for key, value in prompt_inputs.items():
+            prompt += f"{key}: {value}\n"
+        prompt += "\nRespond only with the solution code."
+        messages = []
+        add_user_message(messages, prompt)
+        add_assistant_message(messages, "```code")
+        return chat(messages, stop_sequences=["```"])
 
-    eval_output_path = os.path.join(
-        os.path.dirname(__file__), f"eval_output_{run_id}.json"
+    results = evaluator.run_evaluation(
+        run_prompt_function=run_prompt,
+        dataset_file=os.path.join(os.path.dirname(__file__), f"dataset_{run_id}.json"),
+        json_output_file=os.path.join(
+            os.path.dirname(__file__), f"eval_output_{run_id}.json"
+        ),
     )
-    with open(eval_output_path, "w") as f:
-        json.dump(results, f, indent=2)
