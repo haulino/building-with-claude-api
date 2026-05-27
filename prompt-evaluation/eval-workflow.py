@@ -217,7 +217,7 @@ def generate_prompt_evaluation_report(evaluation_results):
 
 
 class PromptEvaluator:
-    def __init__(self, max_concurrent_tasks=3):
+    def __init__(self, max_concurrent_tasks=2):
         self.max_concurrent_tasks = max_concurrent_tasks
 
     def render(self, template_string, variables):
