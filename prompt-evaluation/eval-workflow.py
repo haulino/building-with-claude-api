@@ -1,3 +1,4 @@
+import concurrent.futures
 import json
 import os
 import re
@@ -221,9 +222,37 @@ class PromptEvaluator:
         )
 
         dataset = []
-        for idea in ideas:
-            result = self.generate_test_case(task_description, idea, prompt_inputs_spec)
-            dataset.append(result)
+        completed = 0
+        total = len(ideas)
+        last_reported_percentage = 0
+
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.max_concurrent_tasks
+        ) as executor:
+            future_to_idea = {
+                executor.submit(
+                    self.generate_test_case,
+                    task_description,
+                    idea,
+                    prompt_inputs_spec,
+                ): idea
+                for idea in ideas
+            }
+
+            for future in concurrent.futures.as_completed(future_to_idea):
+                try:
+                    result = future.result()
+                    completed += 1
+                    current_percentage = int((completed / total) * 100)
+                    milestone = (current_percentage // 20) * 20
+
+                    if milestone > last_reported_percentage:
+                        print(f"Generated {completed}/{total} test cases")
+                        last_reported_percentage = milestone
+
+                    dataset.append(result)
+                except Exception as e:
+                    print(f"Error generating test case: {e}")
 
         with open(output_file, "w") as f:
             json.dump(dataset, f, indent=2)
@@ -354,9 +383,34 @@ class PromptEvaluator:
             dataset = json.load(f)
 
         results = []
-        for test_case in dataset:
-            result = self.run_test_case(test_case, run_prompt_function, extra_criteria)
-            results.append(result)
+        completed = 0
+        total = len(dataset)
+        last_reported_percentage = 0
+
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.max_concurrent_tasks
+        ) as executor:
+            future_to_case = {
+                executor.submit(
+                    self.run_test_case,
+                    test_case,
+                    run_prompt_function,
+                    extra_criteria,
+                ): test_case
+                for test_case in dataset
+            }
+
+            for future in concurrent.futures.as_completed(future_to_case):
+                result = future.result()
+                completed += 1
+                current_percentage = int((completed / total) * 100)
+                milestone = (current_percentage // 20) * 20
+
+                if milestone > last_reported_percentage:
+                    print(f"Graded {completed}/{total} test cases")
+                    last_reported_percentage = milestone
+
+                results.append(result)
 
         average_score = mean([result["score"] for result in results])
         print(f"Average score: {average_score}")
