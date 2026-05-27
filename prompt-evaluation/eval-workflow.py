@@ -596,8 +596,11 @@ class PromptEvaluator:
                     print(f"Graded {completed}/{total} test cases")
                     last_reported_percentage = milestone
 
-        average_score = mean([result["score"] for result in results])
-        print(f"Average score: {average_score}")
+        if results:
+            average_score = mean([r["score"] for r in results])
+            print(f"Average score: {average_score}")
+        else:
+            print("No results to score")
 
         with open(json_output_file, "w") as f:
             json.dump(results, f, indent=2)
