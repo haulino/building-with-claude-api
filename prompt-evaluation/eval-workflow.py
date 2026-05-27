@@ -443,10 +443,9 @@ class PromptEvaluator:
         return dataset
 
     def grade_output(self, test_case, output, extra_criteria):
-        prompt_inputs = ""
-        for key, value in test_case["prompt_inputs"].items():
-            val = value.replace("\n", "\\n")
-            prompt_inputs += f'"{key}":"{val}",\n'
+        prompt_inputs = json.dumps(
+            test_case["prompt_inputs"], ensure_ascii=False, indent=2
+        )
 
         extra_criteria_section = ""
         if extra_criteria:
@@ -472,7 +471,7 @@ class PromptEvaluator:
 
         Original task inputs:
         <task_inputs>
-        {{{{ {prompt_inputs} }}}}
+        {prompt_inputs}
         </task_inputs>
 
         Solution to Evaluate:
