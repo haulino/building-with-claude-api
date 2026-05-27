@@ -234,23 +234,81 @@ class PromptEvaluator:
         prompt_inputs = ""
         for key, value in test_case["prompt_inputs"].items():
             val = value.replace("\n", "\\n")
-            prompt_inputs += f'"{key}": "{val}",\n'
+            prompt_inputs += f'"{key}":"{val}",\n'
+
+        extra_criteria_section = ""
+        if extra_criteria:
+            extra_criteria_template = """\
+            Mandatory Requirements - ANY VIOLATION MEANS AUTOMATIC \
+            FAILURE (score of 3 or lower):
+            <extra_important_criteria>
+            {extra_criteria}
+            </extra_important_criteria>"""
+            extra_criteria_section = self.render(
+                dedent(extra_criteria_template),
+                {"extra_criteria": extra_criteria},
+            )
 
         eval_template = """\
-        Evaluate the following AI-generated solution.
+        Your task is to evaluate the following AI-generated solution \
+        with EXTREME RIGOR.
 
-        Task: {task_description}
-        Inputs: {prompt_inputs}
-        Solution: {output}
+        Original task description:
+        <task_description>
+        {task_description}
+        </task_description>
 
-        Criteria:
+        Original task inputs:
+        <task_inputs>
+        {{{{ {prompt_inputs} }}}}
+        </task_inputs>
+
+        Solution to Evaluate:
+        <solution>
+        {output}
+        </solution>
+
+        Criteria you should use to evaluate the solution:
+        <criteria>
         {solution_criteria}
+        </criteria>
 
+        {extra_criteria_section}
+
+        Scoring Guidelines:
+        * Score 1-3: Solution fails to meet one or more MANDATORY \
+        requirements
+        * Score 4-6: Solution meets all mandatory requirements but \
+        has significant deficiencies in secondary criteria
+        * Score 7-8: Solution meets all mandatory requirements and \
+        most secondary criteria, with minor issues
+        * Score 9-10: Solution meets all mandatory and secondary \
+        criteria
+
+        IMPORTANT SCORING INSTRUCTIONS:
+        * Grade the output based ONLY on the listed criteria
+        * If a solution meets all mandatory and secondary criteria \
+        give it a 10
+        * Do not add your own extra requirements beyond the listed \
+        criteria
+        * ANY violation of a mandatory requirement MUST result in a \
+        score of 3 or lower
+        * The full 1-10 scale should be utilized
+
+        Output Format:
         Provide your evaluation as a structured JSON object with:
         - "strengths": An array of 1-3 key strengths
         - "weaknesses": An array of 1-3 key areas for improvement
         - "reasoning": A concise explanation of your assessment
-        - "score": A number between 1-10"""
+        - "score": A number between 1-10
+
+        Respond with JSON only. Example response shape:
+        {{{{
+            "strengths": ["..."],
+            "weaknesses": ["..."],
+            "reasoning": "...",
+            "score": 8
+        }}}}"""
 
         eval_prompt = self.render(
             dedent(eval_template),
@@ -259,6 +317,7 @@ class PromptEvaluator:
                 "prompt_inputs": prompt_inputs,
                 "output": output,
                 "solution_criteria": "\n".join(test_case["solution_criteria"]),
+                "extra_criteria_section": extra_criteria_section,
             },
         )
 
