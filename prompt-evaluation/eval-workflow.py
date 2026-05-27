@@ -618,7 +618,7 @@ class PromptEvaluator:
 
 if __name__ == "__main__":
     run_id = uuid.uuid4().hex[:8]
-    evaluator = PromptEvaluator(max_concurrent_tasks=1)
+    evaluator = PromptEvaluator(max_concurrent_tasks=3)
 
     dataset = evaluator.generate_dataset(
         task_description="Generate a solution for a given coding task",
