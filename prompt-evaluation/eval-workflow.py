@@ -3,6 +3,7 @@ import json
 import os
 import re
 import uuid
+from html import escape as html_escape
 from statistics import mean
 from textwrap import dedent
 
@@ -177,14 +178,17 @@ def generate_prompt_evaluation_report(evaluation_results):
 """
 
     for result in evaluation_results:
+        esc = html_escape
         prompt_inputs_html = "<br>".join(
             [
-                f"<strong>{key}:</strong> {value}"
+                f"<strong>{esc(key)}:</strong> {esc(str(value))}"
                 for key, value in result["test_case"]["prompt_inputs"].items()
             ]
         )
 
-        criteria_string = "<br>• ".join(result["test_case"]["solution_criteria"])
+        criteria_string = "<br>• ".join(
+            esc(c) for c in result["test_case"]["solution_criteria"]
+        )
 
         score = result["score"]
         if score >= 8:
@@ -194,15 +198,19 @@ def generate_prompt_evaluation_report(evaluation_results):
         else:
             score_class = "score-medium"
 
+        scenario = esc(result["test_case"]["scenario"])
+        output = esc(result["output"])
+        reasoning = esc(result["reasoning"])
+
         html += f"""\
             <tr>
-                <td>{result["test_case"]["scenario"]}</td>
+                <td>{scenario}</td>
                 <td>{prompt_inputs_html}</td>
                 <td>• {criteria_string}</td>
-                <td class="output"><pre>{result["output"]}</pre></td>
+                <td class="output"><pre>{output}</pre></td>
                 <td class="score-col">\
 <span class="score {score_class}">{score}</span></td>
-                <td>{result["reasoning"]}</td>
+                <td>{reasoning}</td>
             </tr>
 """
 
