@@ -315,9 +315,8 @@ class PromptEvaluator:
             prompt_inputs_spec = {}
 
         example_prompt_inputs = ""
-        for key, value in prompt_inputs_spec.items():
-            val = value.replace("\n", "\\n")
-            example_prompt_inputs += f'"{key}": "EXAMPLE_VALUE", // {val}\n'
+        for key in prompt_inputs_spec:
+            example_prompt_inputs += f'"{key}": "EXAMPLE_VALUE"\n'
 
         allowed_keys = ", ".join([f'"{key}"' for key in prompt_inputs_spec.keys()])
 
