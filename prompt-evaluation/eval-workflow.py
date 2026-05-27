@@ -583,16 +583,19 @@ class PromptEvaluator:
             }
 
             for future in concurrent.futures.as_completed(future_to_case):
-                result = future.result()
                 completed += 1
+                try:
+                    result = future.result()
+                    results.append(result)
+                except Exception as e:
+                    print(f"Error grading test case: {e}")
+
                 current_percentage = int((completed / total) * 100)
                 milestone = (current_percentage // 20) * 20
 
                 if milestone > last_reported_percentage:
                     print(f"Graded {completed}/{total} test cases")
                     last_reported_percentage = milestone
-
-                results.append(result)
 
         average_score = mean([result["score"] for result in results])
         print(f"Average score: {average_score}")
