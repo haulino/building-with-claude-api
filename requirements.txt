@@ -1,4 +1,6 @@
 anthropic==0.91.0
 python-dotenv==1.2.2
+numpy>=1.26.0
+requests>=2.31.0
 ruff==0.15.9
 pytest==9.0.3
