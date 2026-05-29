@@ -1,6 +1,8 @@
 services:
   embeddings:
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9
+    # No native ARM64 build available — runs under Rosetta on Apple Silicon
+    platform: linux/amd64
     ports:
       - "8080:80"
     volumes:
