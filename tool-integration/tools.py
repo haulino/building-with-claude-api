@@ -23,7 +23,7 @@ get_current_datetime_schema = {
                 ),
             }
         },
-        "required": [],
+        "required": ["date_format"],
     },
 }
 
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
         if response.stop_reason == "tool_use":
             tool_block = next(
-                b for b in response.content if b.type == "tool_use"
+                block for block in response.content if block.type == "tool_use"
             )
             tool_name = tool_block.name
             tool_input = tool_block.input
@@ -98,7 +98,7 @@ if __name__ == "__main__":
             if tool_name == "get_current_datetime":
                 result = get_current_datetime(**tool_input)
 
-            # Send tool result back to Claude
+            # Append both tool use block and result
             messages.append({"role": "assistant", "content": response.content})
             messages.append({
                 "role": "user",
