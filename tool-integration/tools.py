@@ -133,7 +133,7 @@ if __name__ == "__main__":
             messages.append({"role": "assistant", "content": response.content})
             messages.append({"role": "user", "content": tool_results})
 
-            # Get final response
+            # Get follow-up response
             follow_up = chat(
                 messages,
                 system_prompt,
