@@ -72,9 +72,7 @@ if __name__ == "__main__":
     messages = []
 
     system_prompt = """
-    You are a patient math tutor.
-    Do not directly answer a student's questions.
-    Guide them to a solution step by step.
+    You're a meteorologist. Help users with wheather related questions.
     """
 
     while True:
