@@ -1,0 +1,8 @@
+services:
+  embeddings:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9
+    ports:
+      - "8080:80"
+    volumes:
+      - ./data:/data
+    command: --model-id sentence-transformers/all-MiniLM-L6-v2
