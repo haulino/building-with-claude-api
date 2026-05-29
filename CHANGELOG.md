@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0](https://github.com/haulino/building-with-claude-api/compare/v0.10.0...v0.11.0) (2026-05-29)
+
+
+### Features
+
+* add tool integration with multi-tool agentic loop ([#25](https://github.com/haulino/building-with-claude-api/issues/25)) ([8c7c05a](https://github.com/haulino/building-with-claude-api/commit/8c7c05afa40f97363f573dbbb3c2df17af5c5ff5))
+
 ## [0.10.0](https://github.com/haulino/building-with-claude-api/compare/v0.9.0...v0.10.0) (2026-05-25)
 
 
