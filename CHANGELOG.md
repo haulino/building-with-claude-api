@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0](https://github.com/haulino/building-with-claude-api/compare/v0.11.0...v0.12.0) (2026-05-29)
+
+
+### Features
+
+* add RAG retrieval with vector search over embedded report chunks ([#27](https://github.com/haulino/building-with-claude-api/issues/27)) ([4634c73](https://github.com/haulino/building-with-claude-api/commit/4634c73760a3b071532fcd666b7911ea1714b785))
+
 ## [0.11.0](https://github.com/haulino/building-with-claude-api/compare/v0.10.0...v0.11.0) (2026-05-29)
 
 
