@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify
-from rag_retrieval import chunk_report, get_embeddings
+from rag_retrieval import chunk_report, get_embeddings, create_vector_store
 
 app = Flask(__name__)
 
@@ -53,6 +53,21 @@ def embed():
                 "Connection refused — is the embedding service running on port 8080?"
             )
         return jsonify({"error": error_msg}), 502
+
+
+@app.route("/create-store", methods=["POST"])
+def create_store():
+    if state["embeddings"] is None:
+        return jsonify({"error": "Run embedding first"}), 400
+
+    store = create_vector_store(state["chunks"], state["embeddings"])
+    state["store"] = store
+    return jsonify(
+        {
+            "chunk_count": len(state["chunks"]),
+            "matrix_shape": list(state["embeddings"].shape),
+        }
+    )
 
 
 if __name__ == "__main__":

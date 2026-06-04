@@ -3,6 +3,8 @@ import os
 import json
 from unittest.mock import patch, MagicMock
 
+import numpy as np
+
 sys.path.insert(
     0, os.path.join(os.path.dirname(__file__), "..", "rag-and-agentic-search")
 )
@@ -69,3 +71,30 @@ def test_embed_returns_shape():
     assert response.status_code == 200
     data = json.loads(response.data)
     assert data["shape"] == [2, 3]
+
+
+def test_create_store_requires_embeddings():
+    client = app.test_client()
+    from app import state
+
+    state["chunks"] = [{"heading": "## A", "content": "## A\nContent"}]
+    state["embeddings"] = None
+    response = client.post("/create-store")
+    assert response.status_code == 400
+
+
+def test_create_store_returns_counts():
+    client = app.test_client()
+    from app import state
+
+    state["chunks"] = [
+        {"heading": "## A", "content": "## A\nContent A"},
+        {"heading": "## B", "content": "## B\nContent B"},
+    ]
+    state["embeddings"] = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+
+    response = client.post("/create-store")
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert data["chunk_count"] == 2
+    assert data["matrix_shape"] == [2, 3]
