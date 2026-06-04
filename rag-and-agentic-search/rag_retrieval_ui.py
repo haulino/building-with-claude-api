@@ -94,6 +94,7 @@ def search():
                 "heading": r["heading"],
                 "score": round(r["score"], 4),
                 "content_preview": r["content"][:80],
+                "content": r["content"],
             }
             for r in results
         ]

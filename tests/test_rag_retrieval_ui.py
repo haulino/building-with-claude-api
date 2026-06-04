@@ -9,7 +9,7 @@ sys.path.insert(
     0, os.path.join(os.path.dirname(__file__), "..", "rag-and-agentic-search")
 )
 
-from app import app
+from rag_retrieval_ui import app
 from rag_retrieval import create_vector_store
 
 
@@ -36,7 +36,7 @@ def test_chunk_returns_list_with_headings():
 def test_chunk_stores_state():
     client = app.test_client()
     client.post("/chunk")
-    from app import state
+    from rag_retrieval_ui import state
 
     assert state["chunks"] is not None
     assert len(state["chunks"]) >= 14
@@ -44,7 +44,7 @@ def test_chunk_stores_state():
 
 def test_embed_requires_chunks_first():
     client = app.test_client()
-    from app import state
+    from rag_retrieval_ui import state
 
     state["chunks"] = None
     response = client.post("/embed")
@@ -55,7 +55,7 @@ def test_embed_requires_chunks_first():
 
 def test_embed_returns_shape():
     client = app.test_client()
-    from app import state
+    from rag_retrieval_ui import state
 
     state["chunks"] = [
         {"heading": "## A", "content": "## A\nContent A"},
@@ -76,7 +76,7 @@ def test_embed_returns_shape():
 
 def test_create_store_requires_embeddings():
     client = app.test_client()
-    from app import state
+    from rag_retrieval_ui import state
 
     state["chunks"] = [{"heading": "## A", "content": "## A\nContent"}]
     state["embeddings"] = None
@@ -86,7 +86,7 @@ def test_create_store_requires_embeddings():
 
 def test_create_store_returns_counts():
     client = app.test_client()
-    from app import state
+    from rag_retrieval_ui import state
 
     state["chunks"] = [
         {"heading": "## A", "content": "## A\nContent A"},
@@ -103,7 +103,7 @@ def test_create_store_returns_counts():
 
 def test_search_requires_store():
     client = app.test_client()
-    from app import state
+    from rag_retrieval_ui import state
 
     state["store"] = None
     response = client.post("/search", json={"query": "test"})
@@ -112,7 +112,7 @@ def test_search_requires_store():
 
 def test_search_requires_query():
     client = app.test_client()
-    from app import state
+    from rag_retrieval_ui import state
 
     state["store"] = {"chunks": [], "embeddings": np.array([])}
     response = client.post("/search", json={})
@@ -121,7 +121,7 @@ def test_search_requires_query():
 
 def test_search_returns_ranked_results():
     client = app.test_client()
-    from app import state
+    from rag_retrieval_ui import state
 
     chunks = [
         {"heading": "## A", "content": "## A\nFirst chunk content here"},
@@ -150,4 +150,5 @@ def test_search_returns_ranked_results():
     assert data[0]["heading"] == "## A"
     assert "score" in data[0]
     assert "content_preview" in data[0]
+    assert "content" in data[0]
     assert len(data[0]["content_preview"]) <= 80
