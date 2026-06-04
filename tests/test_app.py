@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+from unittest.mock import patch, MagicMock
 
 sys.path.insert(
     0, os.path.join(os.path.dirname(__file__), "..", "rag-and-agentic-search")
@@ -36,3 +37,35 @@ def test_chunk_stores_state():
 
     assert state["chunks"] is not None
     assert len(state["chunks"]) >= 14
+
+
+def test_embed_requires_chunks_first():
+    client = app.test_client()
+    from app import state
+
+    state["chunks"] = None
+    response = client.post("/embed")
+    assert response.status_code == 400
+    data = json.loads(response.data)
+    assert "error" in data
+
+
+def test_embed_returns_shape():
+    client = app.test_client()
+    from app import state
+
+    state["chunks"] = [
+        {"heading": "## A", "content": "## A\nContent A"},
+        {"heading": "## B", "content": "## B\nContent B"},
+    ]
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+    mock_response.raise_for_status = MagicMock()
+
+    with patch("rag_retrieval.requests.post", return_value=mock_response):
+        response = client.post("/embed")
+
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert data["shape"] == [2, 3]
