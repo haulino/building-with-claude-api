@@ -115,6 +115,38 @@
             margin-top: 6px;
             line-height: 1.4;
         }
+        .result-expandable {
+            background: #0d1b2a;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            overflow: hidden;
+        }
+        .result-summary {
+            padding: 6px 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .result-summary:hover {
+            background: #132238;
+        }
+        .result-expand-icon {
+            color: #555;
+            margin-right: 4px;
+        }
+        .result-full-content {
+            display: none;
+            padding: 8px 12px;
+            border-top: 1px solid #1a2a3e;
+            color: #bbb;
+            white-space: pre-wrap;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .result-full-content.expanded {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -273,10 +305,30 @@
             let html = '<div>Top ' + data.length + ' results for "<em>' + query + '</em>":</div>';
             for (let i = 0; i < data.length; i++) {
                 const r = data[i];
-                html += '<div class="result-item">' + (i + 1) + '. ' + r.heading + ' <span class="result-score">(score: ' + r.score.toFixed(4) + ')</span><br><span style="color:#666">' + r.content_preview + '</span></div>';
+                const id = 'search-result-' + i;
+                html += '<div class="result-expandable">';
+                html += '<div class="result-summary" onclick="toggleResult(\'' + id + '\')">';
+                html += '<span class="result-expand-icon" id="icon-' + id + '">&#9654;</span>';
+                html += (i + 1) + '. ' + r.heading + ' <span class="result-score">(score: ' + r.score.toFixed(4) + ')</span>';
+                html += '</div>';
+                html += '<div class="result-full-content" id="' + id + '">' + escapeHtml(r.content) + '</div>';
+                html += '</div>';
             }
             results.innerHTML = html;
             results.classList.add('visible');
+        }
+
+        function toggleResult(id) {
+            const el = document.getElementById(id);
+            const icon = document.getElementById('icon-' + id);
+            el.classList.toggle('expanded');
+            icon.innerHTML = el.classList.contains('expanded') ? '&#9660;' : '&#9654;';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         document.getElementById('queryInput').addEventListener('keydown', function(e) {
