@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Retrieval Pipeline Explorer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            padding: 24px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.3rem;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 0.8rem;
+            margin-bottom: 24px;
+        }
+        .step {
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 14px;
+            margin-bottom: 12px;
+            background: #16213e;
+        }
+        .step.locked {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .step-title {
+            font-size: 0.9rem;
+        }
+        .step-number {
+            font-weight: bold;
+        }
+        .btn {
+            background: #4caf50;
+            color: #000;
+            border: none;
+            padding: 4px 14px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn:disabled {
+            background: #555;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+        .btn:hover:not(:disabled) {
+            background: #66bb6a;
+        }
+        .results {
+            margin-top: 10px;
+            border-top: 1px solid #333;
+            padding-top: 8px;
+            font-size: 0.8rem;
+            color: #aaa;
+            display: none;
+        }
+        .results.visible {
+            display: block;
+        }
+        .result-item {
+            background: #0d1b2a;
+            padding: 6px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+        .result-score {
+            color: #64b5f6;
+        }
+        .error {
+            color: #ef5350;
+            font-size: 0.8rem;
+            margin-top: 8px;
+        }
+        .query-input {
+            background: #0d1b2a;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px;
+            width: 70%;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.8rem;
+            margin-top: 8px;
+        }
+        .query-input:disabled {
+            opacity: 0.5;
+        }
+        .more-chunks {
+            color: #666;
+            margin-top: 4px;
+            font-size: 0.75rem;
+        }
+        .explanation {
+            color: #888;
+            font-size: 0.75rem;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+        .result-expandable {
+            background: #0d1b2a;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            overflow: hidden;
+        }
+        .result-summary {
+            padding: 6px 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .result-summary:hover {
+            background: #132238;
+        }
+        .result-expand-icon {
+            color: #555;
+            margin-right: 4px;
+        }
+        .result-full-content {
+            display: none;
+            padding: 8px 12px;
+            border-top: 1px solid #1a2a3e;
+            color: #bbb;
+            white-space: pre-wrap;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .result-full-content.expanded {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>RAG Retrieval Pipeline Explorer</h1>
+    <p class="subtitle">Step through each stage to see how retrieval-augmented generation works.</p>
+
+    <!-- Step 1: Chunk -->
+    <div class="step" id="step1">
+        <div class="step-header">
+            <span class="step-title"><span class="step-number">Step 1</span> — Chunk Report</span>
+            <button class="btn" id="btn1" onclick="runChunk()">&#9654; Run</button>
+        </div>
+        <div class="results" id="results1"></div>
+    </div>
+
+    <!-- Step 2: Embed -->
+    <div class="step locked" id="step2">
+        <div class="step-header">
+            <span class="step-title"><span class="step-number">Step 2</span> — Get Embeddings</span>
+            <button class="btn" id="btn2" onclick="runEmbed()" disabled>&#9654; Run</button>
+        </div>
+        <div class="results" id="results2"></div>
+    </div>
+
+    <!-- Step 3: Create Store -->
+    <div class="step locked" id="step3">
+        <div class="step-header">
+            <span class="step-title"><span class="step-number">Step 3</span> — Create Vector Store</span>
+            <button class="btn" id="btn3" onclick="runCreateStore()" disabled>&#9654; Run</button>
+        </div>
+        <div class="results" id="results3"></div>
+    </div>
+
+    <!-- Step 4: Search -->
+    <div class="step locked" id="step4">
+        <div class="step-header">
+            <span class="step-title"><span class="step-number">Step 4</span> — Search</span>
+            <button class="btn" id="btn4" onclick="runSearch()" disabled>&#9654; Search</button>
+        </div>
+        <input type="text" class="query-input" id="queryInput"
+               placeholder="Enter your search query..." disabled>
+        <div class="results" id="results4"></div>
+    </div>
+
+    <script>
+        function unlockStep(n) {
+            const step = document.getElementById('step' + n);
+            const btn = document.getElementById('btn' + n);
+            step.classList.remove('locked');
+            btn.disabled = false;
+            if (n === 4) {
+                document.getElementById('queryInput').disabled = false;
+            }
+        }
+
+        function lockFrom(n) {
+            for (let i = n; i <= 4; i++) {
+                const step = document.getElementById('step' + i);
+                const btn = document.getElementById('btn' + i);
+                const results = document.getElementById('results' + i);
+                step.classList.add('locked');
+                btn.disabled = true;
+                results.classList.remove('visible');
+                results.innerHTML = '';
+                if (i === 4) {
+                    document.getElementById('queryInput').disabled = true;
+                }
+            }
+        }
+
+        function showError(stepN, message) {
+            const results = document.getElementById('results' + stepN);
+            results.innerHTML = '<div class="error">' + message + '</div>';
+            results.classList.add('visible');
+        }
+
+        async function runChunk() {
+            lockFrom(2);
+            const results = document.getElementById('results1');
+            const response = await fetch('/chunk', { method: 'POST' });
+            const data = await response.json();
+
+            if (!response.ok) {
+                showError(1, data.error);
+                return;
+            }
+
+            let html = '<div>&#10003; Chunked into <strong>' + data.length + ' sections</strong></div>';
+            const show = data.slice(0, 5);
+            for (const chunk of show) {
+                html += '<div class="result-item">' + chunk.heading + ' — <span style="color:#666">' + chunk.content_preview + '</span></div>';
+            }
+            if (data.length > 5) {
+                html += '<div class="more-chunks">... +' + (data.length - 5) + ' more chunks</div>';
+            }
+            results.innerHTML = html;
+            results.classList.add('visible');
+            unlockStep(2);
+        }
+
+        async function runEmbed() {
+            lockFrom(3);
+            const results = document.getElementById('results2');
+            const response = await fetch('/embed', { method: 'POST' });
+            const data = await response.json();
+
+            if (!response.ok) {
+                showError(2, data.error);
+                return;
+            }
+
+            let html = '<div>&#10003; Embedding shape: <strong>' + data.shape[0] + ' &times; ' + data.shape[1] + '</strong></div>';
+            html += '<div class="explanation">' + data.shape[0] + ' chunks, each represented as a ' + data.shape[1] + '-dimensional vector. ';
+            html += 'The ' + data.shape[1] + ' dimensions come from the all-MiniLM-L6-v2 model — each dimension captures a learned semantic feature so that similar meanings land close together in vector space.</div>';
+            results.innerHTML = html;
+            results.classList.add('visible');
+            unlockStep(3);
+        }
+
+        async function runCreateStore() {
+            lockFrom(4);
+            const results = document.getElementById('results3');
+            const response = await fetch('/create-store', { method: 'POST' });
+            const data = await response.json();
+
+            if (!response.ok) {
+                showError(3, data.error);
+                return;
+            }
+
+            let html = '<div>&#10003; Vector store created: <strong>' + data.chunk_count + ' chunks</strong>, matrix ' + data.matrix_shape[0] + ' &times; ' + data.matrix_shape[1] + '</div>';
+            html += '<div class="explanation">The store is a ' + data.matrix_shape[0] + ' &times; ' + data.matrix_shape[1] + ' matrix — one row per chunk, ' + data.matrix_shape[1] + ' columns per embedding dimension. ';
+            html += 'At search time, your query is embedded into the same ' + data.matrix_shape[1] + '-dimensional space and compared against each row using cosine similarity.</div>';
+            results.innerHTML = html;
+            results.classList.add('visible');
+            unlockStep(4);
+        }
+
+        async function runSearch() {
+            const query = document.getElementById('queryInput').value.trim();
+            if (!query) return;
+
+            const results = document.getElementById('results4');
+            const response = await fetch('/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query })
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                showError(4, data.error);
+                return;
+            }
+
+            let html = '<div>Top ' + data.length + ' results for "<em>' + query + '</em>":</div>';
+            for (let i = 0; i < data.length; i++) {
+                const r = data[i];
+                const id = 'search-result-' + i;
+                html += '<div class="result-expandable">';
+                html += '<div class="result-summary" onclick="toggleResult(\'' + id + '\')">';
+                html += '<span class="result-expand-icon" id="icon-' + id + '">&#9654;</span>';
+                html += (i + 1) + '. ' + r.heading + ' <span class="result-score">(score: ' + r.score.toFixed(4) + ')</span>';
+                html += '</div>';
+                html += '<div class="result-full-content" id="' + id + '">' + escapeHtml(r.content) + '</div>';
+                html += '</div>';
+            }
+            results.innerHTML = html;
+            results.classList.add('visible');
+        }
+
+        function toggleResult(id) {
+            const el = document.getElementById(id);
+            const icon = document.getElementById('icon-' + id);
+            el.classList.toggle('expanded');
+            icon.innerHTML = el.classList.contains('expanded') ? '&#9660;' : '&#9654;';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.getElementById('queryInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') runSearch();
+        });
+    </script>
+</body>
+</html>
