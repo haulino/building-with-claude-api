@@ -109,6 +109,12 @@
             margin-top: 4px;
             font-size: 0.75rem;
         }
+        .explanation {
+            color: #888;
+            font-size: 0.75rem;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -220,7 +226,10 @@
                 return;
             }
 
-            results.innerHTML = '<div>&#10003; Embedding shape: <strong>' + data.shape[0] + ' &times; ' + data.shape[1] + '</strong></div>';
+            let html = '<div>&#10003; Embedding shape: <strong>' + data.shape[0] + ' &times; ' + data.shape[1] + '</strong></div>';
+            html += '<div class="explanation">' + data.shape[0] + ' chunks, each represented as a ' + data.shape[1] + '-dimensional vector. ';
+            html += 'The ' + data.shape[1] + ' dimensions come from the all-MiniLM-L6-v2 model — each dimension captures a learned semantic feature so that similar meanings land close together in vector space.</div>';
+            results.innerHTML = html;
             results.classList.add('visible');
             unlockStep(3);
         }
@@ -236,7 +245,10 @@
                 return;
             }
 
-            results.innerHTML = '<div>&#10003; Vector store created: <strong>' + data.chunk_count + ' chunks</strong>, matrix ' + data.matrix_shape[0] + ' &times; ' + data.matrix_shape[1] + '</div>';
+            let html = '<div>&#10003; Vector store created: <strong>' + data.chunk_count + ' chunks</strong>, matrix ' + data.matrix_shape[0] + ' &times; ' + data.matrix_shape[1] + '</div>';
+            html += '<div class="explanation">The store is a ' + data.matrix_shape[0] + ' &times; ' + data.matrix_shape[1] + ' matrix — one row per chunk, ' + data.matrix_shape[1] + ' columns per embedding dimension. ';
+            html += 'At search time, your query is embedded into the same ' + data.matrix_shape[1] + '-dimensional space and compared against each row using cosine similarity.</div>';
+            results.innerHTML = html;
             results.classList.add('visible');
             unlockStep(4);
         }
