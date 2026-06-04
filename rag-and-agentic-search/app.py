@@ -1,5 +1,11 @@
-from flask import Flask, render_template, jsonify
-from rag_retrieval import chunk_report, get_embeddings, create_vector_store
+from flask import Flask, render_template, jsonify, request
+from rag_retrieval import (
+    chunk_report,
+    get_embeddings,
+    create_vector_store,
+    get_query_embedding,
+    search_store,
+)
 
 app = Flask(__name__)
 
@@ -68,6 +74,37 @@ def create_store():
             "matrix_shape": list(state["embeddings"].shape),
         }
     )
+
+
+@app.route("/search", methods=["POST"])
+def search():
+    if state["store"] is None:
+        return jsonify({"error": "Create vector store first"}), 400
+
+    data = request.get_json()
+    query = data.get("query", "").strip() if data else ""
+    if not query:
+        return jsonify({"error": "Query is required"}), 400
+
+    try:
+        query_embedding = get_query_embedding(query)
+        results = search_store(query_embedding, state["store"], top_k=3)
+        response = [
+            {
+                "heading": r["heading"],
+                "score": round(r["score"], 4),
+                "content_preview": r["content"][:80],
+            }
+            for r in results
+        ]
+        return jsonify(response)
+    except Exception as e:
+        error_msg = str(e)
+        if "Connection refused" in error_msg or "ConnectionError" in error_msg:
+            error_msg = (
+                "Connection refused — is the embedding service running on port 8080?"
+            )
+        return jsonify({"error": error_msg}), 502
 
 
 if __name__ == "__main__":
