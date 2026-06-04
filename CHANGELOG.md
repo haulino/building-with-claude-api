@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0](https://github.com/haulino/building-with-claude-api/compare/v0.12.0...v0.13.0) (2026-06-04)
+
+
+### Features
+
+* add Flask web UI for RAG pipeline explorer ([#29](https://github.com/haulino/building-with-claude-api/issues/29)) ([75eee10](https://github.com/haulino/building-with-claude-api/commit/75eee1085c4a40e8a2bc3cda8d82acd1fc323cc7))
+
 ## [0.12.0](https://github.com/haulino/building-with-claude-api/compare/v0.11.0...v0.12.0) (2026-05-29)
 
 
